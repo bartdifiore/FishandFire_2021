@@ -1,0 +1,3 @@
+raw <- read.csv("data/raw/raw_210902.csv") %>% janitor::clean_names()
+source("code/libraries_functions.R")
+source("code/libraries_functions.R")

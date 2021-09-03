@@ -1,0 +1,32 @@
+{
+    "type": [
+        2,
+        2,
+        0,
+        1,
+        3,
+        0,
+        1,
+        3,
+        3,
+        3,
+        0,
+        1,
+        2
+    ],
+    "data": [
+        "\nR version 4.1.1 (2021-08-10) -- \"Kick Things\"\nCopyright (C) 2021 The R Foundation for Statistical Computing\nPlatform: x86_64-apple-darwin17.0 (64-bit)\n\nR is free software and comes with ABSOLUTELY NO WARRANTY.\nYou are welcome to redistribute it under certain conditions.\nType 'license()' or 'licence()' for distribution details.\n\n  Natural language support but running in an English locale\n\nR is a collaborative project with many contributors.\nType 'contributors()' for more information and\n'citation()' on how to cite R or R packages in publications.\n\n",
+        "Type 'demo()' for some demos, 'help()' for on-line help, or\n'help.start()' for an HTML browser interface to help.\nType 'q()' to quit R.\n\n",
+        "> ",
+        "raw <- read.csv(\"data/raw/raw_210902.csv\") %>% janitor::clean_names()",
+        "Error in read.csv(\"data/raw/raw_210902.csv\") %>% janitor::clean_names() : \n  could not find function \"%>%\"\n",
+        "> ",
+        "source(\"code/libraries_functions.R\")",
+        "\u001B[30m── \u001B[1mAttaching packages\u001B[22m ────────────────────────────────────────────────────────────────── tidyverse 1.3.1 ──\u001B[39m\n",
+        "\u001B[30m\u001B[32m✓\u001B[30m \u001B[34mggplot2\u001B[30m 3.3.5     \u001B[32m✓\u001B[30m \u001B[34mpurrr  \u001B[30m 0.3.4\n\u001B[32m✓\u001B[30m \u001B[34mtibble \u001B[30m 3.1.3     \u001B[32m✓\u001B[30m \u001B[34mdplyr  \u001B[30m 1.0.7\n\u001B[32m✓\u001B[30m \u001B[34mtidyr  \u001B[30m 1.1.3     \u001B[32m✓\u001B[30m \u001B[34mstringr\u001B[30m 1.4.0\n\u001B[32m✓\u001B[30m \u001B[34mreadr  \u001B[30m 2.0.0     \u001B[32m✓\u001B[30m \u001B[34mforcats\u001B[30m 0.5.1\u001B[39m\n",
+        "\u001B[30m── \u001B[1mConflicts\u001B[22m ───────────────────────────────────────────────────────────────────── tidyverse_conflicts() ──\n\u001B[31mx\u001B[30m \u001B[34mdplyr\u001B[30m::\u001B[32mfilter()\u001B[30m masks \u001B[34mstats\u001B[30m::filter()\n\u001B[31mx\u001B[30m \u001B[34mdplyr\u001B[30m::\u001B[32mlag()\u001B[30m    masks \u001B[34mstats\u001B[30m::lag()\u001B[39m\n",
+        "> ",
+        "source(\"code/libraries_functions.R\")",
+        "\nRestarting R session...\n\n"
+    ]
+}

@@ -1,0 +1,241 @@
+---
+title: "Cooper"
+author: "Bart DiFiore"
+date: "6/29/2021"
+output: html_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(message=FALSE, warning=FALSE, error = FALSE, echo=FALSE)
+```
+
+```{r libraries, warning=FALSE}
+library(tidyverse)
+library(lme4)
+library(lmerTest)
+library(sjPlot)
+library(ggeffects)
+
+```
+
+
+```{r cleandata}
+
+df <- read_csv("/Users/BartMBP/Desktop/insects.csv") %>%
+  rename(medium.sensitive = Medium) %>%
+  janitor::clean_names() %>%
+  filter(month == 6) %>% # filter out the march sampling in 2009.... The reason that I'm doing this is because seasonality might make those observations very different than the summer observations and the purpose of this analysis is to really focus on the long term effects of fire and trout on stream community structure
+  select(-c(sitetime, stream_number, month, latitude, longitude, nms1:nms3_13_20, burn_trout:dw_trout)) %>% 
+  pivot_longer(cols = total_inverts:rarified_number_taxa, names_to = "response", values_to = "value") %>%
+  mutate(dw = case_when( dw == 1 ~ "dry", # lets get some codes back into the data set so we can build figures that are easily interpretable
+             dw == 2 ~ "medium", 
+             dw == 3 ~ "wet"), 
+         burn_debris = case_when(
+           burn_debris == 0 ~ "un", 
+           burn_debris == 1 ~ "bri", 
+           burn_debris == 2 ~ "brb", 
+           burn_debris == 3 ~ "bdf"
+         ), 
+         trout = case_when(
+           trout == 1 ~ "present", 
+           trout == 0 ~ "absent"
+         ))
+
+
+
+
+```
+
+First step for me was to get a better understanding of the "treatments" and how the treatements are distributed across sites and years.
+
+```{r data_structure}
+
+# Is a year dry, wet, or intermediate?
+ggplot(df, aes(x = year, y = dw))+
+  geom_point(aes(color = code, group = code), show.legend = F)+
+  geom_line(aes(color = code, group = code), show.legend = F)+
+  facet_wrap(~code)
+
+# Are trout present or absent?
+ggplot(df, aes(x = year, y = trout))+
+  geom_point(aes(color = code, group = code), show.legend = F)+
+  geom_line(aes(color = code, group = code), show.legend = F)+
+  facet_wrap(~code)
+
+# Did sites experience burns? and was there debris flows? 
+ggplot(df, aes(x = year, y = burn_debris))+
+  geom_point(aes(color = code, group = code), show.legend = F)+
+  geom_line(aes(color = code, group = code), show.legend = F)+
+  facet_wrap(~code)
+
+
+# which sites have less than 3 years of data? 
+
+subset <- df %>% group_by(code) %>% 
+  filter(response == "total_inverts") %>%
+  summarize(n = n()) %>%
+  filter(n < 3)
+
+```
+
+Based on these plots, I would recommend dropping aqu, bgl, ecl, ecu, sal, and tor. All have less than 3 (i.e. 2 or 1) samplings, and they will likely just skew any statistical analysis that focuses on temporal trends. We can use these sites in other analyses, but I would recommend dropping, when looking for temporal patterns in the effects of fire and trout on community structure. 
+
+```{r}
+
+df2 <- df %>% filter(!code %in% c("aqu", "bgl", "ecl", "ecu", "sal", "tor")) # see note above
+
+ggplot(df2, aes(x = year, y = burn_debris))+
+  geom_point(aes(color = code, group = code), show.legend = F)+
+  geom_line(aes(color = code, group = code), show.legend = F)+
+  facet_wrap(~code)
+
+```
+
+Ok, so I think that one of the core questions you are trying to address is, are there differences in the community between sites/years that are unburnt, burnt with riparian intact, burnt with riparian burnt, or burnt with a debris flow? And is this modified (i.e. interact) with the presence or absence of trout? Lets start with the first part of the question, and visualize the mean and variance in a subset of the responses for the effect of fire and debris flow on total biomass and richness. 
+
+```{r}
+
+temp <- df2 %>% group_by(response, burn_debris) %>% 
+  summarize(mean = mean(value), 
+            sd = sd(value, na.rm = T))
+
+
+temp %>% filter(response %in% c("total_inverts", "rarified_number_taxa")) %>% 
+  ggplot(aes(x = burn_debris, y = mean))+
+  geom_point()+
+  geom_pointrange(aes(ymin = mean - sd, ymax = mean+sd))+
+  facet_wrap(~response, scales = "free")+
+  theme_classic()
+
+```
+
+So lots of noise in these relationships. Possible that there is a signal here, but may be hard to pull out. Let's look at trout. 
+
+```{r}
+temp <- df2 %>% group_by(response, trout) %>% 
+  summarize(mean = mean(value), 
+            sd = sd(value, na.rm = T))
+
+temp %>% filter(response %in% c("total_inverts", "rarified_number_taxa")) %>% 
+  ggplot(aes(x = trout, y = mean))+
+  geom_point()+
+  geom_pointrange(aes(ymin = mean - sd, ymax = mean+sd))+
+  facet_wrap(~response, scales = "free")+
+  theme_classic()
+  
+```
+
+Biologically, the effect of trout makes sense. Richness is higher when trout are present, and total biomass is lower in the presence of the predator. 
+
+Really though, we want to understand if there is an interaction between trout present and burn status. Let's visualize first
+
+```{r}
+temp <- df2 %>% group_by(response, trout, burn_debris) %>% 
+  summarize(mean = mean(value), 
+            sd = sd(value, na.rm = T))
+
+temp %>% filter(response %in% c("total_inverts", "rarified_number_taxa")) %>% 
+  ggplot(aes(x = burn_debris, y = mean))+
+  geom_pointrange(aes(color = trout, ymin = mean - sd, ymax = mean+sd), position = position_dodge(width = 0.5))+
+  facet_wrap(~response, scales = "free")+
+  theme_classic()
+  
+```
+
+Doesn't appear to be much here. Possible a negative effect of trout in unburned areas. This analysis will likely be hampered by the lack of trout in sites/years that were burned w/ debris flows or burned with riparian burned. 
+
+Lets add in the overall climate in each year (wet, dry, intermediate ["medium"]). So this represents a three-way interaction between burn status, climate, and trout presence. 
+
+```{r}
+temp <- df2 %>% group_by(response, trout, burn_debris, dw) %>% 
+  summarize(mean = mean(value), 
+            sd = sd(value, na.rm = T))
+
+temp %>% filter(response %in% c("total_inverts", "rarified_number_taxa")) %>% 
+  ggplot(aes(x = burn_debris, y = mean))+
+  geom_pointrange(aes(color = trout, pch = dw, ymin = mean - sd, ymax = mean+sd), position = position_dodge(width = 0.75))+
+  facet_wrap(~response, scales = "free")+
+  theme_classic()
+  
+```
+
+Seems to be some stronger patterns emerging here. Richness tends to be lower, but biomass higher in wet years. 
+
+Let's build a paired down model to see what might be going on. The following are plots of the model predictions for total invert biomass and rarified taxa richness as a funciton of burn status interacting with trout prescense and burn status interacting with overall climate (i.e. dry, wet, or medium). In both models, I've included year and site as random intercept effects, and plotted the conditional fixed effects means of the different treatmensts and treatment combinations. The way that I interpret including year and site as random intercept effects is: there are differences between sites and years that are not going to be accounted for by our treatments -- of the remaining variance, what is the effect of the treatments. 
+
+```{r}
+
+#hist(log(df2$value[df$response == "total_inverts"]))
+
+mod1 <- lmer(log(value) ~ burn_debris*trout*dw + (1|code) + (1|year), df2[df2$response == "total_inverts", ])
+#summary(mod1)
+
+mod2 <- lmer(log(value) ~ burn_debris*(trout+dw)  + (1|code) + (1|year), df2[df2$response == "total_inverts", ])
+#summary(mod2)
+
+
+temp <- ggeffects::ggpredict(mod2, terms = ~burn_debris*(trout+dw), back.transform = T, type = "sim")
+plot(temp)+
+  labs(title = "Model predictions", x = "", y = "Total invert biomass (g)")
+
+
+tab_model(mod2)
+
+```
+
+```{r}
+# for rarified taxa richness 
+
+mod3 <- lmer(log(value) ~ burn_debris*(trout+dw)  + (1|code) + (1|year), df2[df2$response == "rarified_number_taxa", ])
+#summary(mod3)
+
+temp <- ggeffects::ggpredict(mod3, terms = ~burn_debris*(trout+dw), back.transform = T, type = "sim")
+plot(temp)+
+  labs(title = "Model predictions", x = "", y = "Rarified taxa richness")
+tab_model(mod3)
+```
+
+Moving forward what I would propose is to use a similar style of analysis but really dig into these trends. There seems to be a pattern where total invert biomass is higher when burn status is high (i.e. bdf, brb) particularly in wet years when trout are absent. BUT rarified richness tends to be lower when burn status is high (i.e. bdf, brb), particularly in wet years. This suggests to me that disturbance leads to population explosions of a few species, which outcompete others in the community leading to high biomass and low richness. But the effects of disturbance disipate with time (remains to be tested), and unburned sites display higher richness and lower total biomass. So we could use the remaining response variables, to try to figure out what is driving the increase in biomass and decrease in richness with disturbance. 
+
+Re. remaining predictor variables: 
+
+Are the other predictor variables measured only at the time the inverts were collected? (e.g. flow during sampling?) or do they represent seasonal/annual averages? 
+
+My thought would be to divide up the analysis a bit. Maybe start with a broad analysis: What is the effect of burn status on invertebrate stream communities? Then in a subsequent analysis dig into the hypothetical (only because its not a controled experiment) mechanisms underlying the patterns. For example, we could do a deeper dive in the early 2009-2010 data when you have lots of seasonal observations and lots of other predictors, or the later data when you added other predictions (i.e. flow, etc.). Does that make sense? Happy to chat via zoom. 
+
+Best, 
+
+Bart
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
