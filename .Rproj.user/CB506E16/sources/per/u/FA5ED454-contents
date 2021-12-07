@@ -1,0 +1,12 @@
+x = 1:100
+y = rnorm(n = length(x), mean = x, sd = 10)
+
+mod <- c(~ x)
+
+temp <- function(model, X){
+  t <- paste(X, mod)
+  t2 <- formula(t)
+  summary(lm(t2))
+}
+
+temp(mod, "y")

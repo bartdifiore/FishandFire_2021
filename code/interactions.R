@@ -1,4 +1,3 @@
-
 source("code/libraries_functions.R")
 source("code/clean_data.R")
 
@@ -10,61 +9,52 @@ source("code/clean_data.R")
 
 # For simplicity, I'll divide the models and figures into the different "classes" of repsonse variable according to the table of response variables in `Fire-trout hypotheses.docx`
 
-#-------------------------------------------------------------
-## Sample model
-#-------------------------------------------------------------
-
-mod.sample <- glmer(total_insects ~ trout + burn_debris + scale(avg_daily_disch_nr_nrst_gage) + scale(preceding_yr_dry_duration_ys) + scale(yrs_since_disturbance) + (1|code) + (1|year), df, family = "poisson")
-summary(mod.sample)
-
-    # This just confirms that we don't have collinearity between the two continuous predictors
-    plot(max_disch_nr_nrst_gage ~ preceding_yr_dry_duration_ys, df)
-    cor.test(df$max_disch_nr_nrst_gage, df$preceding_yr_dry_duration_ys)
 
 # Build a function for the model
-    
+
 q.glmer <- quietly(glmer)
 q.lmer <- quietly(lmer)
-    
+
+predictor.form = c()
+
+
 mod.function <- function(y, data){
-    response = as.name(y)
-    form = substitute(response ~ trout + burn_debris + scale(avg_daily_disch_nr_nrst_gage) + scale(preceding_yr_dry_duration_ys) + scale(yrs_since_disturbance) + (1|code) + (1|year)) # model form
-    if(is.integer(data[,y]) == T){ # this just fits a poisson glmer if the repsonse is integer data, but a linear mixed effects model if the response is non-integer
-      mod.temp = q.glmer(form, data, family = "poisson")
-      mod.df = tidy(mod.temp$result) %>% 
-        mutate(response = y, .before = effect) %>% 
-        mutate(warning = ifelse(length(mod.temp$warnings) == 0, "NO", mod.temp$warnings), .after = p.value)
-      mod.df
-      } else{
-        mod.temp = q.lmer(form, data)
-        mod.df = tidy(mod.temp$result) %>% 
-          mutate(response = y, .before = effect) %>% 
-          mutate(warning = ifelse(length(mod.temp$warnings) == 0, "NO", mod.temp$warnings), .after = p.value)
-        mod.df
-      }
+    mod.form <- formula(paste(y, predictor.form))
+    mod.temp = q.glmer(mod.form, data, family = "poisson")
+    mod.df = tidy(mod.temp$result) %>% 
+      mutate(response = y, .before = effect) %>% 
+      mutate(warning = ifelse(length(mod.temp$warnings) == 0, "NO", mod.temp$warnings), .after = p.value)
+    mod.df
+  } else{
+    mod.temp = q.lmer(form, data)
+    mod.df = tidy(mod.temp$result) %>% 
+      mutate(response = y, .before = effect) %>% 
+      mutate(warning = ifelse(length(mod.temp$warnings) == 0, "NO", mod.temp$warnings), .after = p.value)
+    mod.df
+  }
 }
 
 
-        # test it 
-            mod.function(y = "total_insects", data = df) # works! 
-            tidy(mod.sample, effects = "fixed") %>% mutate(response = "total_insects", .before = effect)
-            mod.function(y = "temp", data = df) # works!
+# test it 
+mod.function(y = "total_insects", data = df) # works! 
+tidy(mod.sample, effects = "fixed") %>% mutate(response = "total_insects", .before = effect)
+mod.function(y = "temp", data = df) # works!
 
 mod.predict <- function(y, data){
-    response = as.name(y)
-    form = substitute(response ~ trout + burn_debris + scale(avg_daily_disch_nr_nrst_gage) + scale(preceding_yr_dry_duration_ys) + scale(yrs_since_disturbance) + (1|code) + (1|year)) # model form
-    if(is.integer(data[,y]) == T){ # this just fits a poisson glmer if the response is integer data, but a linear mixed effects model if the response is non-integer
-      mod.temp = q.glmer(form, data, family = "poisson")
-      ggpredict(mod.temp$result, terms = ~ burn_debris) %>% 
-        as.data.frame() %>% 
-        mutate(response = y, .before = x) %>%
-        mutate(warning = ifelse(length(mod.temp$warnings) == 0, "NO", mod.temp$warnings), .after = group)
-        } else{
-          mod.temp = q.lmer(form, data)
-          ggpredict(mod.temp$result, terms = ~ burn_debris) %>% 
-            as.data.frame() %>% 
-            mutate(response = y, .before = x) %>%
-            mutate(warning = ifelse(length(mod.temp$warnings) == 0, "NO", mod.temp$warnings), .after = group)
+  response = as.name(y)
+  form = substitute(response ~ trout + burn_debris + scale(avg_daily_disch_nr_nrst_gage) + scale(preceding_yr_dry_duration_ys) + scale(yrs_since_disturbance) + (1|code) + (1|year)) # model form
+  if(is.integer(data[,y]) == T){ # this just fits a poisson glmer if the response is integer data, but a linear mixed effects model if the response is non-integer
+    mod.temp = q.glmer(form, data, family = "poisson")
+    ggpredict(mod.temp$result, terms = ~ burn_debris) %>% 
+      as.data.frame() %>% 
+      mutate(response = y, .before = x) %>%
+      mutate(warning = ifelse(length(mod.temp$warnings) == 0, "NO", mod.temp$warnings), .after = group)
+  } else{
+    mod.temp = q.lmer(form, data)
+    ggpredict(mod.temp$result, terms = ~ burn_debris) %>% 
+      as.data.frame() %>% 
+      mutate(response = y, .before = x) %>%
+      mutate(warning = ifelse(length(mod.temp$warnings) == 0, "NO", mod.temp$warnings), .after = group)
   }
 }
 
@@ -78,11 +68,11 @@ mod.predict(y = "temp", data = df) # works!
 #---------------------------------------------------------------
 ## Apply model to all responses
 #---------------------------------------------------------------
-            
+
 model_sum <- map_dfr(unlist(responses[-2], use.names = F), mod.function, data = df) %>%
-              mutate(sig = ifelse(p.value < 0.05 & p.value > 0.01, "*",
-                                  ifelse(p.value < 0.01 & p.value > 0.001, "**",
-                                         ifelse(p.value <= 0.001, "***", "NS"))))
+  mutate(sig = ifelse(p.value < 0.05 & p.value > 0.01, "*",
+                      ifelse(p.value < 0.01 & p.value > 0.001, "**",
+                             ifelse(p.value <= 0.001, "***", "NS"))))
 
 ms <- model_sum %>% 
   mutate(response_cat = case_when(
@@ -98,7 +88,7 @@ ms <- model_sum %>%
     term == "scale(yrs_since_disturbance)" ~ "Years since last disturbance"
   )) %>%
   mutate(estimate = ifelse(warning == "NO", estimate, NA))
-  
+
 
 model_predictions <- map_dfr(unlist(responses[-2], use.names = F), mod.predict, data = df)
 
@@ -166,7 +156,7 @@ ggsave("figures/invert_indices.png", device = "png")
 ms %>% mutate(sig.col = ifelse(p.value >= 0.05, "NS", "S")) %>%
   group_by(term) %>%
   mutate(response_ordered = forcats::fct_reorder(response, estimate)) %>%
-ggplot(aes(x = response_ordered, y = estimate))+
+  ggplot(aes(x = response_ordered, y = estimate))+
   geom_hline(yintercept = 0, lty = 5, color = "gray")+
   geom_pointrange(aes(ymax = estimate + std.error, 
                       ymin = estimate - std.error, fill = sig.col), pch = 21, show.legend = F)+
@@ -178,7 +168,7 @@ ggplot(aes(x = response_ordered, y = estimate))+
   cowplot::theme_cowplot()
 
 ggsave("figures/continuous_predictor_effects.png", device = "png", width = 15, height = 20)
-  
+
 
 
 # Scrap to quickly build trout figure 
@@ -225,8 +215,3 @@ mt %>%
   cowplot::theme_cowplot()
 
 ggsave("figures/trout_effects.png", device = "png", width = 15, height = 12)
-
-
-
-
-
