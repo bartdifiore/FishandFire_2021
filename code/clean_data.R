@@ -4,12 +4,12 @@
 
 source("code/libraries_functions.R")
 
-raw <- read.csv("data/raw/raw_210902.csv") %>% janitor::clean_names()
+raw <- read.csv("data/raw/raw_220113.csv") %>% janitor::clean_names()
 
 responses <- list(physical_chemical = c("avg_max_depth", "temp", "do", "avg_canopy_cover"), food_resources = c("leaf_cpom_wet_wt", "algae_cpom_wet_wt", "nitella_aquatic_veg_cpom_wet_wt"), invert_taxa = c("total_inverts", "total_non_insects", "total_insects", "total_amphibians", "mollusks", "ept", "och", "megaloptera", "rarified_taxa", "pielou_s_j"), invert_traits = c("sensitive", "tolerant", "coll_gath", "coll_filt", "filter_lent", "grazer", "predator", "shredder", "multi", "fast_seas", "small", "large", "cold_steno", "cool_warm_eury", "warm_eury", "pool", "mixed", "riffle", "no_wings", "weak_flght", "strong_flght", "abund_drift", "atmospheric"), invert_indices = c("biotic_index", "thermal_index"))
 
 
-predictors <- c("code", "month", "year","trout", "burn_debris", "avg_daily_disch_nr_nrst_gage", "max_disch_nr_nrst_gage", "cumulative_junes_dry", "preceding_yr_dry_duration_ys", "yrs_since_disturbance")
+predictors <- c("code", "month", "year","trout", "burn_debris", "avg_daily_disch_nr_nrst_gage", "max_disch_nr_nrst_gage", "cumulative_junes_dry", "preceding_yr_dry_duration_ys", "yrs_since_disturbance", "rip_m_h_burn", "rip_burn", "basin_m_h_burn", "basin_burn")
 
 meta_names <- c("stream", "code", "latitude", "longitude", "elevation")
 

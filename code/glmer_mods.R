@@ -17,6 +17,17 @@ source("code/clean_data.R")
 mod.sample <- glmer(total_insects ~ trout + burn_debris + scale(avg_daily_disch_nr_nrst_gage) + scale(preceding_yr_dry_duration_ys) + scale(yrs_since_disturbance) + (1|code) + (1|year), df, family = "poisson")
 summary(mod.sample)
 
+library (multcomp)
+summary(glht(mod.sample, mcp(burn_debris="Tukey")))
+summary(glht(mod.sample, mcp(burn_debris= c("bdf - brb = 0"))))
+
+
+temp <- summary(glht(mod.sample, mcp(burn_debris=c("bdf-un = 0", 
+                                                   "brb-un = 0", 
+                                                   "bri-un = 0", 
+                                                   "un = 0"
+))))
+
     # This just confirms that we don't have collinearity between the two continuous predictors
     plot(max_disch_nr_nrst_gage ~ preceding_yr_dry_duration_ys, df)
     cor.test(df$max_disch_nr_nrst_gage, df$preceding_yr_dry_duration_ys)
@@ -52,26 +63,60 @@ mod.function <- function(y, data){
 
 mod.predict <- function(y, data){
     response = as.name(y)
+    
     form = substitute(response ~ trout + burn_debris + scale(avg_daily_disch_nr_nrst_gage) + scale(preceding_yr_dry_duration_ys) + scale(yrs_since_disturbance) + (1|code) + (1|year)) # model form
     if(is.integer(data[,y]) == T){ # this just fits a poisson glmer if the response is integer data, but a linear mixed effects model if the response is non-integer
+      
+      # run the model
       mod.temp = q.glmer(form, data, family = "poisson")
+
+      # estimate post hoc comparisons      
+      post.hoc = summary(glht(mod.temp$result, mcp(burn_debris=c("bdf - un = 0", 
+                                                                 "brb - un = 0", 
+                                                                 "bri - un = 0", 
+                                                                 "un = 0"))))
+      df.post = data.frame(response = y,
+                           x = c("bdf", "brb", "bri", "un"),
+                           comparison = names(post.hoc$test$coefficients), 
+                           difference = post.hoc$test$coefficients,
+                           pvalue = round(post.hoc$test$pvalues,8)
+      )
+      
+      # run the model predictions and join the posthoc comparisons
       ggpredict(mod.temp$result, terms = ~ burn_debris) %>% 
         as.data.frame() %>% 
         mutate(response = y, .before = x) %>%
-        mutate(warning = ifelse(length(mod.temp$warnings) == 0, "NO", mod.temp$warnings), .after = group)
+        mutate(warning = ifelse(length(mod.temp$warnings) == 0, "NO", mod.temp$warnings), .after = group) %>%
+        left_join(df.post)
         } else{
+          
+          # run the model
           mod.temp = q.lmer(form, data)
+          
+          # estimate post hoc comparisons      
+          post.hoc = summary(glht(mod.temp$result, mcp(burn_debris=c("bdf - un = 0", 
+                                                                     "brb - un = 0", 
+                                                                     "bri - un = 0", 
+                                                                     "un = 0"))))
+          df.post = data.frame(response = y,
+                               x = c("bdf", "brb", "bri", "un"),
+                               comparison = names(post.hoc$test$coefficients), 
+                               difference = post.hoc$test$coefficients,
+                               pvalue = round(post.hoc$test$pvalues,8)
+          )
+          
           ggpredict(mod.temp$result, terms = ~ burn_debris) %>% 
             as.data.frame() %>% 
             mutate(response = y, .before = x) %>%
-            mutate(warning = ifelse(length(mod.temp$warnings) == 0, "NO", mod.temp$warnings), .after = group)
+            mutate(warning = ifelse(length(mod.temp$warnings) == 0, "NO", mod.temp$warnings), .after = group) %>%
+            left_join(df.post)
   }
 }
 
 
 # test it 
 mod.predict(y = "total_insects", data = df) # works! 
-ggpredict(mod.sample, terms = ~ burn_debris)
+plot(ggpredict(mod.sample, terms = ~ burn_debris))
 
 mod.predict(y = "temp", data = df) # works!
 
@@ -104,7 +149,7 @@ model_predictions <- map_dfr(unlist(responses[-2], use.names = F), mod.predict, 
 
 mp <- model_predictions %>% 
   rename(burn_debris = x) %>%
-  select(-group) %>%
+  dplyr::select(-c(group)) %>%
   mutate(response_cat = case_when(
     response %in% responses[[1]] ~ "physical_chemical",
     response %in% responses[[3]] ~ "invert_taxa", 
@@ -121,42 +166,55 @@ mp <- model_predictions %>%
 # Conditional effects plots of burn status, holding continuous predictors at their mean, and assuming trout absent. Plots are conditional mean and 95% confidence intervals at the population-level of the random effect. 
 
 
-mp %>% filter(response_cat == "physical_chemical") %>% 
+mp %>% 
+  mutate(sig = ifelse(pvalue < 0.05, "significant", "NS")) %>%
+  filter(response_cat == "physical_chemical") %>% 
   ggplot(aes(x = burn_debris, y = predicted))+
-  geom_pointrange(aes(color = burn_debris, ymin = conf.low, ymax = conf.high), position = position_dodge(width = 0.5), show.legend = F)+
+  geom_pointrange(aes(color = burn_debris, ymin = conf.low, ymax = conf.high, fill = sig), position = position_dodge(width = 0.5), pch = 21)+
+  scale_fill_manual(values = c("white", "black"))+
   coord_flip()+
   facet_wrap(~response, scales = "free") +
-  labs(y = "Conditional mean", x = "Burn status", title = "Physical and chemical reponses")+
+  labs(y = "Conditional mean", x = "Burn status", title = "Physical and chemical reponses", 
+       fill = "Sig. (UN reference)")+
   cowplot::theme_cowplot()
 
 ggsave("figures/physical_chemical.png", device = "png")
 
-mp %>% filter(response_cat == "invert_taxa") %>% 
+mp %>% 
+  mutate(sig = ifelse(pvalue < 0.05, "significant", "NS")) %>%
+  filter(response_cat == "invert_taxa") %>% 
   ggplot(aes(x = burn_debris, y = predicted))+
-  geom_pointrange(aes(color = burn_debris, ymin = conf.low, ymax = conf.high), position = position_dodge(width = 0.5), show.legend = F)+
+  geom_pointrange(aes(color = burn_debris, ymin = conf.low, ymax = conf.high, fill = sig), position = position_dodge(width = 0.5), pch = 21)+
+  scale_fill_manual(values = c("white", "black"))+
   coord_flip()+
   facet_wrap(~response, scales = "free", ncol = 3) +
-  labs(y = "Conditional mean abundance", x = "Burn status", title = "Invertebrate taxonomic reponses")+
+  labs(y = "Conditional mean abundance", x = "Burn status", title = "Invertebrate taxonomic reponses", fill = "Sig. (UN reference)")+
   cowplot::theme_cowplot()
 
 ggsave("figures/invert_taxa.png", device = "png")
 
-mp %>% filter(response_cat == "invert_traits") %>% 
+mp %>% 
+  mutate(sig = ifelse(pvalue < 0.05, "significant", "NS")) %>%
+  filter(response_cat == "invert_traits") %>% 
   ggplot(aes(x = burn_debris, y = predicted))+
-  geom_pointrange(aes(color = burn_debris, ymin = conf.low, ymax = conf.high), position = position_dodge(width = 0.5), show.legend = F)+
+  geom_pointrange(aes(color = burn_debris, ymin = conf.low, ymax = conf.high, fill = sig), position = position_dodge(width = 0.5), pch = 21)+
+  scale_fill_manual(values = c("white", "black"))+
   coord_flip()+
   facet_wrap(~response, scales = "free") +
-  labs(y = "Conditional mean abundance", x = "Burn status", title = "Invertebrate trait class reponses")+
+  labs(y = "Conditional mean abundance", x = "Burn status", title = "Invertebrate trait class reponses", fill = "Sig. (UN reference)")+
   cowplot::theme_cowplot()
 
 ggsave("figures/invert_traits.png", device = "png")
 
-mp %>% filter(response_cat == "invert_indices") %>% 
+mp %>% 
+  mutate(sig = ifelse(pvalue < 0.05, "significant", "NS")) %>%
+  filter(response_cat == "invert_indices") %>% 
   ggplot(aes(x = burn_debris, y = predicted))+
-  geom_pointrange(aes(color = burn_debris, ymin = conf.low, ymax = conf.high), position = position_dodge(width = 0.5), show.legend = F)+
+  geom_pointrange(aes(color = burn_debris, ymin = conf.low, ymax = conf.high, fill = sig), position = position_dodge(width = 0.5), pch = 21)+
+  scale_fill_manual(values = c("white", "black"))+
   coord_flip()+
   facet_wrap(~response, scales = "free") +
-  labs(y = "Conditional means", x = "Burn status", title = "Invertebrate indices")+
+  labs(y = "Conditional means", x = "Burn status", title = "Invertebrate indices", fill = "Sig. (UN reference)")+
   cowplot::theme_cowplot()
 
 ggsave("figures/invert_indices.png", device = "png")
@@ -186,28 +244,39 @@ ggsave("figures/continuous_predictor_effects.png", device = "png", width = 15, h
 mod.predict.trout <- function(y, data){
   response = as.name(y)
   form = substitute(response ~ trout + burn_debris + scale(avg_daily_disch_nr_nrst_gage) + scale(preceding_yr_dry_duration_ys) + scale(yrs_since_disturbance) + (1|code) + (1|year)) # model form
-  if(is.integer(data[,y]) == T){ # this just fits a poisson glmer if the repsonse is integer data, but a linear mixed effects model if the response is non-integer
+  if(is.integer(data[,y]) == T){ # this just fits a poisson glmer if the response is integer data, but a linear mixed effects model if the response is non-integer
+    
+    # run the model
     mod.temp = q.glmer(form, data, family = "poisson")
+    
+    # run the model predictions and join the posthoc comparisons
     ggpredict(mod.temp$result, terms = ~ trout) %>% 
       as.data.frame() %>% 
       mutate(response = y, .before = x) %>%
-      mutate(warning = ifelse(length(mod.temp$warnings) == 0, "NO", mod.temp$warnings), .after = group)
+      mutate(warning = ifelse(length(mod.temp$warnings) == 0, "NO", mod.temp$warnings), .after = group) %>%
+      mutate(pvalue = round(as.numeric(summary(mod.temp$result)$coefficients[1:2,4]),8))
   } else{
+    
+    # run the model
     mod.temp = q.lmer(form, data)
+    
+    # run the model predictions and join the posthoc comparisons
     ggpredict(mod.temp$result, terms = ~ trout) %>% 
       as.data.frame() %>% 
       mutate(response = y, .before = x) %>%
-      mutate(warning = ifelse(length(mod.temp$warnings) == 0, "NO", mod.temp$warnings), .after = group)
+      mutate(warning = ifelse(length(mod.temp$warnings) == 0, "NO", mod.temp$warnings), .after = group) %>%
+      mutate(pvalue = round(as.numeric(summary(mod.temp$result)$coefficients[1:2,5]), 8))
   }
 }
 
-ggpredict(mod.sample, terms = ~ trout, condition = c(burn_debris = "un"))
+
+mod.predict.trout(y = "thermal_index", df)
 
 model_predictions_trout <- map_dfr(unlist(responses[-2], use.names = F), mod.predict.trout, data = df)
 
 mt <- model_predictions_trout %>% 
   rename(trout = x) %>%
-  select(-group) %>%
+  dplyr::select(-group) %>%
   mutate(response_cat = case_when(
     response %in% responses[[1]] ~ "physical_chemical",
     response %in% responses[[3]] ~ "invert_taxa", 
@@ -217,11 +286,14 @@ mt <- model_predictions_trout %>%
   filter(warning == "NO")
 
 mt %>%
+  mutate(sig = ifelse(pvalue < 0.05, "significant", "NS")) %>%
   ggplot(aes(x = response, y = predicted))+
-  geom_pointrange(aes(color = trout, ymin = conf.low, ymax = conf.high), position = position_dodge(width = 0.5))+
+  geom_pointrange(aes(color = trout, ymin = conf.low, ymax = conf.high, fill = sig),
+                  position = position_dodge(width = 0.5), pch = 21)+
+  scale_fill_manual(values = c("white", "black"))+
   coord_flip()+
   facet_wrap(~response_cat, scales = "free")+
-  labs(y = "Conditional mean abundance", x = "Response", title = "Trout effects")+
+  labs(y = "Conditional mean abundance", x = "Response", title = "Trout effects", fill= "Sig. (Absent reference)")+
   cowplot::theme_cowplot()
 
 ggsave("figures/trout_effects.png", device = "png", width = 15, height = 12)

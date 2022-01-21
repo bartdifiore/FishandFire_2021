@@ -1,0 +1,5 @@
+﻿Response_cat,Response,BRI,BRB,BDF,Trout_Presence ,Discharge,Drying_Index
+Physical-chemical,Avg max depth,-1,-1,-1,0,1,-1
+Physical-chemical,Temperature,0,1,1,0,-1,1
+Physical-chemical,DO,0,1,1,0,1,-1
+Physical-chemical,Canopy cover,0,-1,-1,0,1,-1

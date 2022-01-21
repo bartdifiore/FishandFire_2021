@@ -10,17 +10,20 @@ source("code/clean_data.R")
 # For simplicity, I'll divide the models and figures into the different "classes" of repsonse variable according to the table of response variables in `Fire-trout hypotheses.docx`
 
 
+mod.sample <- glmer(total_insects ~ scale(yrs_since_disturbance)*burn_debris + scale(avg_daily_disch_nr_nrst_gage) + scale(preceding_yr_dry_duration_ys) + trout + (1|code) + (1|year), data = df, family = "poisson")
+summary(mod.sample)
+
 # Build a function for the model
 
 q.glmer <- quietly(glmer)
 q.lmer <- quietly(lmer)
 
-predictor.form = c()
-
-
 mod.function <- function(y, data){
-    mod.form <- formula(paste(y, predictor.form))
-    mod.temp = q.glmer(mod.form, data, family = "poisson")
+  tryCatch({
+  response = as.name(y)
+  form = substitute(response ~ scale(yrs_since_disturbance)*burn_debris + scale(avg_daily_disch_nr_nrst_gage) + scale(preceding_yr_dry_duration_ys) + trout + (1|code) + (1|year)) # model form
+  if(is.integer(data[,y]) == T){ # this just fits a poisson glmer if the repsonse is integer data, but a linear mixed effects model if the response is non-integer
+    mod.temp = q.glmer(form, data, family = "poisson")
     mod.df = tidy(mod.temp$result) %>% 
       mutate(response = y, .before = effect) %>% 
       mutate(warning = ifelse(length(mod.temp$warnings) == 0, "NO", mod.temp$warnings), .after = p.value)
@@ -32,38 +35,39 @@ mod.function <- function(y, data){
       mutate(warning = ifelse(length(mod.temp$warnings) == 0, "NO", mod.temp$warnings), .after = p.value)
     mod.df
   }
+  }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
 }
 
 
 # test it 
 mod.function(y = "total_insects", data = df) # works! 
-tidy(mod.sample, effects = "fixed") %>% mutate(response = "total_insects", .before = effect)
-mod.function(y = "temp", data = df) # works!
 
-mod.predict <- function(y, data){
+mod.predict <- function(y, terms, data){
+  tryCatch({
   response = as.name(y)
-  form = substitute(response ~ trout + burn_debris + scale(avg_daily_disch_nr_nrst_gage) + scale(preceding_yr_dry_duration_ys) + scale(yrs_since_disturbance) + (1|code) + (1|year)) # model form
+  form = substitute(response ~ trout + burn_debris * scale(yrs_since_disturbance) + scale(avg_daily_disch_nr_nrst_gage) + scale(preceding_yr_dry_duration_ys) + (1|code) + (1|year)) # model form
   if(is.integer(data[,y]) == T){ # this just fits a poisson glmer if the response is integer data, but a linear mixed effects model if the response is non-integer
     mod.temp = q.glmer(form, data, family = "poisson")
-    ggpredict(mod.temp$result, terms = ~ burn_debris) %>% 
+    ggpredict(mod.temp$result, terms = ~ yrs_since_disturbance*burn_debris) %>% 
       as.data.frame() %>% 
       mutate(response = y, .before = x) %>%
       mutate(warning = ifelse(length(mod.temp$warnings) == 0, "NO", mod.temp$warnings), .after = group)
   } else{
     mod.temp = q.lmer(form, data)
-    ggpredict(mod.temp$result, terms = ~ burn_debris) %>% 
+    ggpredict(mod.temp$result, terms = ~ yrs_since_disturbance*burn_debris) %>% 
       as.data.frame() %>% 
       mutate(response = y, .before = x) %>%
       mutate(warning = ifelse(length(mod.temp$warnings) == 0, "NO", mod.temp$warnings), .after = group)
   }
+  }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
 }
 
 
 # test it 
-mod.predict(y = "total_insects", data = df) # works! 
-ggpredict(mod.sample, terms = ~ burn_debris)
+mod.predict(y = "avg_max_depth", data = df) # works! 
+temp <- ggpredict(mod.sample, terms = ~ yrs_since_disturbance*burn_debris)
+plot(temp)
 
-mod.predict(y = "temp", data = df) # works!
 
 #---------------------------------------------------------------
 ## Apply model to all responses
@@ -93,8 +97,7 @@ ms <- model_sum %>%
 model_predictions <- map_dfr(unlist(responses[-2], use.names = F), mod.predict, data = df)
 
 mp <- model_predictions %>% 
-  rename(burn_debris = x) %>%
-  select(-group) %>%
+  rename(yrs_since_disturbance = x, burn_debris = group) %>%
   mutate(response_cat = case_when(
     response %in% responses[[1]] ~ "physical_chemical",
     response %in% responses[[3]] ~ "invert_taxa", 
@@ -161,7 +164,6 @@ ms %>% mutate(sig.col = ifelse(p.value >= 0.05, "NS", "S")) %>%
   geom_pointrange(aes(ymax = estimate + std.error, 
                       ymin = estimate - std.error, fill = sig.col), pch = 21, show.legend = F)+
   scale_fill_manual(values = c(alpha("gray", 0), "black")) +
-  
   coord_flip()+
   facet_wrap(response_cat ~ term, scales = "free", ncol = 3)+
   labs(x = "", y = "Effect size")+

@@ -1,20 +1,15 @@
 stream,code,latitude,longitude,elevation
 Arroyo Hondo,aho,34.489907,-120.143013,75
-Arroyo Quemada,aqu,34.499588,-120.120611,169
 Cold Springs,csp,34.456563,-119.653326,234
-El Capitan high up,ecu,34.497253,-120.002975,281
-El Capitan lower,ecl,34.481533,-120.018405,121
 El Capitan usual,ecm,34.482938,-120.017658,124
 Gobernador,gob,34.410467,-119.462283,134
 Maria Ygnacio,myg,34.476801,-119.790505,116
 Mission at Rocky Nook,mrn,34.443747,-119.709493,129
-Mission SBBG lower,bgl,34.454329,-119.709955,188
 Mission SBBG upper,bgu,34.460483,-119.71012,232
 Rattlesnake lower,ral,34.464474,-119.687972,373
 Rattlesnake upper,rau,34.470763,-119.688856,476
 Refugio,ref,34.506218,-120.064933,126
 Romero,rom,34.458571,-119.591069,360
-San Antonio lower,sal,34.464345,-119.774457,128
 San Antonio upper,sau,34.467248,-119.77312,138
 San Jose,sjo,34.492925,-119.803048,321
 San Onofre lower,sol,34.478971,-120.189568,68
@@ -24,4 +19,4 @@ San Roque upper,sru,34.465553,-119.731284,214
 San Ysidro,sys,34.452924,-119.621784,199
 Sycamore,syc,34.442444,-119.674701,65
 Tajiguas,taj,34.500838,-120.094127,108
-Toro,tor,34.448226,-119.560818,335
+,,NA,NA,NA
