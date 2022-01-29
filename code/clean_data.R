@@ -6,10 +6,14 @@ source("code/libraries_functions.R")
 
 raw <- read.csv("data/raw/raw_220113.csv") %>% janitor::clean_names()
 
-responses <- list(physical_chemical = c("avg_max_depth", "temp", "do", "avg_canopy_cover"), food_resources = c("leaf_cpom_wet_wt", "algae_cpom_wet_wt", "nitella_aquatic_veg_cpom_wet_wt"), invert_taxa = c("total_inverts", "total_non_insects", "total_insects", "total_amphibians", "mollusks", "ept", "och", "megaloptera", "rarified_taxa", "pielou_s_j"), invert_traits = c("sensitive", "tolerant", "coll_gath", "coll_filt", "filter_lent", "grazer", "predator", "shredder", "multi", "fast_seas", "small", "large", "cold_steno", "cool_warm_eury", "warm_eury", "pool", "mixed", "riffle", "no_wings", "weak_flght", "strong_flght", "abund_drift", "atmospheric"), invert_indices = c("biotic_index", "thermal_index"))
+responses <- list(environmental = c("avg_max_depth", "flow", "temp", "do", "avg_canopy_cover","conductivity"),
+                  total_indices = c("total_inverts", "total_amphibians", "rarified_taxa", "pielou_s_j","biotic_index", "thermal_index"),
+                  taxomonic = c("ept", "och", "megaloptera",  "ephemerop", "trichoptera", "diptera", "turbellaria", "mollusks"),
+                  functional_groups = c("coll_gath", "coll_filt", "filter_lent", "grazer", "predator", "shredder"),
+                  traits = c("semi", "uni", "multi", "fast_seas", "non_seas", "small", "medium", "large", "pool","mixed", "riffle", "no_wings", "weak_flght", "strong_flght", "rare_drift", "occ_com_drift", "abund_drift", "abund_drift", "cut_resp", "gills"))
 
 
-predictors <- c("code", "month", "year","trout", "burn_debris", "avg_daily_disch_nr_nrst_gage", "max_disch_nr_nrst_gage", "cumulative_junes_dry", "preceding_yr_dry_duration_ys", "yrs_since_disturbance", "rip_m_h_burn", "rip_burn", "basin_m_h_burn", "basin_burn")
+predictors <- c("code", "month", "year","trout", "burn_debris", "avg_daily_disch_nr_nrst_gage", "preceding_yr_dry_duration_ys", "yrs_since_disturbance")
 
 meta_names <- c("stream", "code", "latitude", "longitude", "elevation")
 
@@ -20,7 +24,7 @@ meta <- raw %>% select(all_of(meta_names)) %>% distinct()
 
 write.csv(meta, "data/derived/metadata.csv", quote = F, row.names = F)
 
-for_round <- for_filter[!for_filter %in% c(predictors, responses$physical_chemical, responses$invert_indices, responses$food_resources, "rarified_taxa", "pielou_s_j")]
+for_round <- for_filter[!for_filter %in% c(predictors, responses$environmental, "rarified_taxa", "pielou_s_j", "biotic_index", "thermal_index")]
 
 df <- raw %>% select(all_of(for_filter)) %>%
   filter(month == 6) %>% # filter out the march sampling in 2009.... The reason that I'm doing this is because seasonality might make those observations very different than the summer observations and the purpose of this analysis is to really focus on the long term effects of fire and trout on stream community structure
