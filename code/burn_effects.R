@@ -69,7 +69,7 @@ mod.function <- function(y, data){
 
 
         # test it 
-            mod.function(y = "mollusks", data = df) # works! 
+            mod.function(y = "conductivity", data = df) # works! 
             tidy(mod.sample, effects = "fixed") %>% mutate(response = "total_insects", .before = effect)
             mod.function(y = "temp", data = df) # works!
 
@@ -151,7 +151,7 @@ mod.predict <- function(y, data){
 
 
 # test it 
-mod.predict(y = "turbellaria", data = df) # works! 
+mod.predict(y = "conductivity", data = df) # works! 
 as.data.frame(ggpredict(mod.sample, terms = ~burn_debris))
 
 #---------------------------------------------------------------
@@ -347,5 +347,8 @@ summary(algae)
 
 
 
-
+mod.sample <- lmer(conductivity ~ burn_debris + scale(avg_daily_disch_nr_nrst_gage) + scale(preceding_yr_dry_duration_ys) + trout + (1|code) + (1|year), df)
+summary(mod.sample)
+car::qqPlot(residuals(mod.sample))
+hist(residuals(mod.sample), breaks = 30)
 

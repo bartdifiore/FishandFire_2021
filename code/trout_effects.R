@@ -10,7 +10,7 @@ t <- df %>% filter(burn_debris == "un")
     # y ~ trout + scale(avg_daily_disch_nr_nrst_gage) + scale(preceding_yr_dry_duration_ys) + (1|code) + (1|year)
 
 
-mod.sample <- glmer(ept ~ trout + scale(avg_daily_disch_nr_nrst_gage) + scale(preceding_yr_dry_duration_ys) + (1|code) + (1|year), t, family = "poisson")
+mod.sample <- glmer(pool ~ trout + scale(avg_daily_disch_nr_nrst_gage) + scale(preceding_yr_dry_duration_ys) + (1|code) + (1|year), t, family = "poisson")
 summary(mod.sample)
 plot(ggpredict(mod.sample, ~trout))
 car::qqPlot(residuals(mod.sample))
@@ -49,9 +49,9 @@ trout_effects <- function(y, data){
 }
 
 
-trout_effects(y = "ept", t)
+trout_effects(y = "pool", t)
 
-model_predictions_trout <- map_dfr(unlist(responses[-1], use.names = F), trout_effects, data = df)
+model_predictions_trout <- map_dfr(unlist(responses[-1], use.names = F), trout_effects, data = t)
 
 mt <- model_predictions_trout %>% 
   rename(trout = x) %>%
@@ -96,12 +96,15 @@ png("figures/correlogram.png")
 psych::cor.plot(drivers)
 dev.off()
 
+psych::pairs.panels(drivers)
+
 
 t <- t %>% 
   mutate(trout.binomial = ifelse(trout == "absent", 0, 1))
 
 effects_on_trout <- glmer(trout.binomial ~ scale(avg_max_depth) + scale(temp) + (1|code) + (1|year), t, family = "binomial")
 summary(effects_on_trout)
+
 
 vec <- seq(min(t$avg_max_depth), max(t$avg_max_depth), length.out = 100)
 pred_trout <- as.data.frame(ggpredict(effects_on_trout, terms = c("avg_max_depth[vec]"))) %>%

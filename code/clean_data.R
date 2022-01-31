@@ -6,11 +6,11 @@ source("code/libraries_functions.R")
 
 raw <- read.csv("data/raw/raw_220113.csv") %>% janitor::clean_names()
 
-responses <- list(environmental = c("avg_max_depth", "flow", "temp", "do", "avg_canopy_cover","conductivity"),
+responses <- list(environmental = c("avg_max_depth", "flow", "temp", "do", "avg_canopy_cover","conductivity", "leaf_cpom_wet_wt"),
                   total_indices = c("total_inverts", "total_amphibians", "rarified_taxa", "pielou_s_j","biotic_index", "thermal_index"),
                   taxomonic = c("ept", "och", "megaloptera",  "ephemerop", "trichoptera", "diptera", "turbellaria", "mollusks"),
                   functional_groups = c("coll_gath", "coll_filt", "filter_lent", "grazer", "predator", "shredder"),
-                  traits = c("semi", "uni", "multi", "fast_seas", "non_seas", "small", "medium", "large", "pool","mixed", "riffle", "no_wings", "weak_flght", "strong_flght", "rare_drift", "occ_com_drift", "abund_drift", "abund_drift", "cut_resp", "gills"))
+                  traits = c("semi", "uni", "multi", "fast_seas", "non_seas", "small", "medium", "large", "pool","mixed", "riffle", "no_wings", "weak_flght", "strong_flght", "rare_drift", "occ_com_drift", "abund_drift", "abund_drift", "cut_resp", "gills", "atmospheric"))
 
 
 predictors <- c("code", "month", "year","trout", "burn_debris", "avg_daily_disch_nr_nrst_gage", "preceding_yr_dry_duration_ys", "yrs_since_disturbance")
@@ -38,7 +38,8 @@ df <- raw %>% select(all_of(for_filter)) %>%
            trout == 1 ~ "present", 
            trout == 0 ~ "absent"
          )) %>% 
-  mutate(across(all_of(for_round), round, 0), 
+  mutate(conductivity = as.numeric(conductivity), 
+         across(all_of(for_round), round, 0), 
          across(all_of(for_round), as.integer))
 
 
