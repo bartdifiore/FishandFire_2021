@@ -102,7 +102,13 @@ psych::pairs.panels(drivers)
 t <- t %>% 
   mutate(trout.binomial = ifelse(trout == "absent", 0, 1))
 
-effects_on_trout <- glmer(trout.binomial ~ scale(avg_max_depth) + scale(temp) + (1|code) + (1|year), t, family = "binomial")
+#trout presence and depth, temperature, DO, and canopy.
+
+lm1 <- lm(temp ~ avg_canopy_cover + do, t)
+t$res_do_canopy <- residuals(lm1) # The effects of temperature after accounting for dissolved oxygen and canopy cover
+
+
+effects_on_trout <- glmer(trout.binomial ~ scale(avg_max_depth) * scale(res_do_canopy) + (1|code) + (1|year), t, family = "binomial")
 summary(effects_on_trout)
 
 
