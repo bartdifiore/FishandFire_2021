@@ -1,0 +1,68 @@
+ AIC
+ 9241.969
+
+---
+Tests of directed separation:
+
+                                 Independ.Claim Test.Type DF Crit.Value P.Value    
+        algae_cpom_wet_wt ~ avg_max_depth + ...      coef 46    20.0746  0.0000 ***
+                 shredder ~ avg_max_depth + ...      coef 46    -8.6452  0.0000 ***
+     trout ~ avg_daily_disch_nr_nrst_gage + ...      coef 46    -0.2142  0.8304    
+  shredder ~ avg_daily_disch_nr_nrst_gage + ...      coef 46   -10.0038  0.0000 ***
+       och ~ avg_daily_disch_nr_nrst_gage + ...      coef 46     1.1133  0.2656    
+    grazer ~ avg_daily_disch_nr_nrst_gage + ...      coef 46    -3.5231  0.0004 ***
+                 trout ~ leaf_cpom_wet_wt + ...      coef 46     0.5975  0.5502    
+     algae_cpom_wet_wt ~ leaf_cpom_wet_wt + ...      coef 46    -3.0877  0.0020  **
+                   och ~ leaf_cpom_wet_wt + ...      coef 46     2.5678  0.0102   *
+             coll_gath ~ leaf_cpom_wet_wt + ...      coef 46     7.3220  0.0000 ***
+                grazer ~ leaf_cpom_wet_wt + ...      coef 46     7.9056  0.0000 ***
+                             trout ~ flow + ...      coef 46     0.8879  0.3746    
+                 algae_cpom_wet_wt ~ flow + ...      coef 46    13.8951  0.0000 ***
+                               och ~ flow + ...      coef 46     0.1410  0.8878    
+                         coll_gath ~ flow + ...      coef 46    -3.1282  0.0018  **
+                            grazer ~ flow + ...      coef 46    -6.7807  0.0000 ***
+                algae_cpom_wet_wt ~ trout + ...      coef 46   -13.1210  0.0000 ***
+             shredder ~ algae_cpom_wet_wt + ...      coef 46    -3.4789  0.0005 ***
+                  och ~ algae_cpom_wet_wt + ...      coef 46     3.3021  0.0010 ***
+                           och ~ shredder + ...      coef 46     4.7348  0.0000 ***
+                     coll_gath ~ shredder + ...      coef 46    11.7407  0.0000 ***
+                        grazer ~ shredder + ...      coef 46     5.0841  0.0000 ***
+                       grazer ~ coll_gath + ...      coef 46     1.7316  0.0834    
+
+--
+Global goodness-of-fit:
+
+Chi-Squared = 0 with P-value = 1 and on 26 degrees of freedom
+Fisher's C = 1435.372 with P-value = 0 and on 46 degrees of freedom
+
+---
+Coefficients:
+
+           Response                    Predictor Estimate Std.Error DF Crit.Value P.Value Std.Estimate
+              trout                avg_max_depth  11.0220    4.7679 46     2.3117  0.0208       0.8011
+                och                        trout  -1.4633    0.0574 46   -25.4828  0.0000      -0.7841
+                och                avg_max_depth   0.3571    0.1203 46     2.9687  0.0030       0.1015
+          coll_gath                          och  -0.0031     2e-04 46   -13.0001  0.0000      -0.5012
+          coll_gath                        trout   0.1234    0.0735 46     1.6771  0.0935       0.0617
+          coll_gath            algae_cpom_wet_wt   0.0032     1e-04 46    39.4294  0.0000       0.6289
+          coll_gath                avg_max_depth   0.6354    0.1533 46     4.1451  0.0000       0.1688
+          coll_gath avg_daily_disch_nr_nrst_gage   3.5897    0.7845 46     4.5758  0.0000       0.1767
+             grazer                        trout  -0.4110    0.0891 46    -4.6107  0.0000      -0.2086
+             grazer                avg_max_depth  -1.4480      0.26 46    -5.5688  0.0000      -0.3902
+             grazer            algae_cpom_wet_wt   0.0017     1e-04 46    14.3323  0.0000       0.3426
+           shredder             leaf_cpom_wet_wt  -0.0009     3e-04 46    -3.5340  0.0004      -0.0436
+           shredder                         flow   0.0029     0.013 46     0.2225  0.8240       0.0044
+  algae_cpom_wet_wt avg_daily_disch_nr_nrst_gage   1.5267    0.7764 46     1.9665  0.0492       0.0352
+            ~~trout                   ~~shredder   0.3745         - 46     2.6485  0.0056       0.3745
+              ~~och                     ~~grazer   0.1878         - 46     1.2538  0.1083       0.1878
+
+---
+Individual R-squared:
+
+           Response   method Marginal Conditional
+              trout    delta     0.00        0.00
+                och trigamma     0.64        0.99
+          coll_gath trigamma     0.44        0.99
+             grazer trigamma     0.37        0.98
+           shredder trigamma     0.00        0.99
+  algae_cpom_wet_wt trigamma     0.00        1.00
